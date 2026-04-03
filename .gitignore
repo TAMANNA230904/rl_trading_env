@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+*.egg-info/
+venv/
+uv.lock
+server.err.log
+server.log
