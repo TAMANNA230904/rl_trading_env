@@ -1,18 +1,3 @@
-<<<<<<< HEAD
----
-title: RL Trading Environment Server
-emoji: chart_with_upwards_trend
-colorFrom: green
-colorTo: blue
-sdk: docker
-pinned: false
-app_port: 8000
-tags:
-  - openenv
-  - reinforcement-learning
-  - trading
----
-
 # RL Trading Environment
 
 A complete single-asset reinforcement learning trading environment for OpenEnv.
@@ -130,6 +115,3 @@ Build the Docker image:
 ```bash
 openenv build
 ```
-=======
-# rl_trading_env
->>>>>>> efd42df53aac638fdec4d4845c2c2d864a6583e7
