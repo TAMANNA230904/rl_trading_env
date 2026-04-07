@@ -6,3 +6,5 @@ venv/
 uv.lock
 server.err.log
 server.log
+.venv/
+.codex/
