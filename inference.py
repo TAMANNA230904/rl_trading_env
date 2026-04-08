@@ -203,7 +203,8 @@ def choose_action(
         )
         content = (completion.choices[0].message.content or "").strip()
         return parse_action(content, valid_actions, observation, observed_prices)
-    except Exception:
+    except Exception as e:
+        print("LLM FAILED:", e)
         return heuristic_action(valid_actions, observation, observed_prices)
 
 
@@ -215,6 +216,11 @@ async def create_env() -> RlTradingEnv:
 
 async def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY) if API_BASE_URL and API_KEY and MODEL_NAME else None
+    print("LLM STATUS:")
+    print("API_BASE_URL:", API_BASE_URL)
+    print("API_KEY:", "SET" if API_KEY else "NOT SET")
+    print("MODEL_NAME:", MODEL_NAME)
+    print("Client created:", client is not None)
     env: Optional[RlTradingEnv] = None
     rewards: list[float] = []
     raw_rewards: list[float] = []
