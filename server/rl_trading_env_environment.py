@@ -1,9 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
-
 """OpenEnv trading simulator for reinforcement learning and policy inference."""
 
 from __future__ import annotations
@@ -15,15 +9,12 @@ import numpy as np
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
-try:
-    from ..models import (
-        RewardMode,
-        RlTradingAction,
-        RlTradingObservation,
-        TradingActionType,
-    )
-except ImportError:
-    from models import RewardMode, RlTradingAction, RlTradingObservation, TradingActionType
+from rl_trading_env.models import (
+    RewardMode,
+    RlTradingAction,
+    RlTradingObservation,
+    TradingActionType,
+)
 
 
 @dataclass(slots=True)
@@ -71,7 +62,7 @@ class RlTradingEnvironment(Environment):
         reward_mode: RewardMode = RewardMode.PORTFOLIO_DELTA,
         risk_penalty_weight: float = 0.02,
         invalid_action_penalty: float = 0.001,
-        reward_scale: float = 10_000.0,
+        reward_scale: float = 1.00,
         seed: int = 7,
     ):
         self.episode_length = max(episode_length, window_size + 2)
@@ -102,7 +93,8 @@ class RlTradingEnvironment(Environment):
     def reset(self) -> RlTradingObservation:
         """Reset the episode and return the initial observation."""
         self._reset_count += 1
-        self._rng = np.random.default_rng(self._base_seed + self._reset_count)
+        #self._rng = np.random.default_rng(self._base_seed + self._reset_count)
+        self._rng = np.random.default_rng()
         self._prices = self._generate_price_series()
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._t = self.window_size - 1
@@ -225,6 +217,9 @@ class RlTradingEnvironment(Environment):
             reward = self._risk_adjusted_reward(step_return, downside_only=False)
         elif self.reward_mode == RewardMode.SORTINO_LIKE:
             reward = self._risk_adjusted_reward(step_return, downside_only=True)
+
+        if trade.action == TradingActionType.HOLD:
+            reward -= 0.00005
 
         if not trade.executed and trade.action != TradingActionType.HOLD:
             reward -= self.invalid_action_penalty

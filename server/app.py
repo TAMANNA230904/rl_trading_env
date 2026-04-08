@@ -35,12 +35,8 @@ except Exception as e:  # pragma: no cover
         "openenv is required for the web interface. Install dependencies with '\n    uv sync\n'"
     ) from e
 
-try:
-    from ..models import RlTradingAction, RlTradingObservation
-    from .rl_trading_env_environment import RlTradingEnvironment
-except (ImportError, ModuleNotFoundError):
-    from models import RlTradingAction, RlTradingObservation
-    from server.rl_trading_env_environment import RlTradingEnvironment
+from rl_trading_env.models import RlTradingAction, RlTradingObservation
+from server.rl_trading_env_environment import RlTradingEnvironment
 
 
 app = create_app(

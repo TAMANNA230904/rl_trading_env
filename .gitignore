@@ -3,7 +3,8 @@ __pycache__/
 *.pyc
 *.egg-info/
 venv/
-uv.lock
+build/
+
 server.err.log
 server.log
 .venv/

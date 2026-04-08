@@ -29,10 +29,10 @@ dev = [
 
 [project.scripts]
 # Server entry point - enables running via: uv run --project . server
-# or: python -m rl_trading_env.server.app
-server = "rl_trading_env.server.app:main"
+# or: python -m server.app
+server = "server.app:main"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["rl_trading_env", "rl_trading_env.server"]
-package-dir = { "rl_trading_env" = "rl_trading_env", "rl_trading_env.server" = "rl_trading_env/server" }
+packages = ["rl_trading_env", "server"]
+package-dir = { "rl_trading_env" = "rl_trading_env", "server" = "server" }
