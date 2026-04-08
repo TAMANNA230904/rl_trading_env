@@ -1,3 +1,14 @@
+---
+title: Meta AI Trading Env
+emoji: 🚀
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+tags:
+  - openenv
+---
+
 # RL Trading Environment
 
 A complete single-asset reinforcement learning trading environment for OpenEnv.
