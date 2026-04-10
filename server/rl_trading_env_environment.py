@@ -233,7 +233,8 @@ class RlTradingEnvironment(Environment):
         if not trade.executed and trade.action != TradingActionType.HOLD:
             reward -= self.invalid_action_penalty
 
-        bounded_reward = min(max(reward * self.reward_scale, 0.0), 0.999)
+        scaled_reward = 0.5 + (reward * self.reward_scale * 100.0)
+        bounded_reward = min(max(scaled_reward, 0.0), 0.999)
         return float(bounded_reward)
 
     def _resolve_task(self, task_id: str | None) -> tuple[str, dict]:
