@@ -22,9 +22,9 @@ from tasks import TASK_CONFIGS, choose_action, score_from_rewards
 load_dotenv()
 
 IMAGE_NAME = os.getenv("IMAGE_NAME")
-API_BASE_URL = os.getenv("API_BASE_URL")
-API_KEY = os.getenv("API_KEY")
-MODEL_NAME = os.getenv("MODEL_NAME")
+API_BASE_URL = os.getenv("API_BASE_URL","https://router.huggingface.co/v1")
+API_KEY = os.getenv("HF_TOKEN")
+MODEL_NAME = os.getenv("MODEL_NAME","meta-llama/Llama-3.1-8B-Instruct:novita")
 TASK_NAME = os.getenv("TASK_NAME", "rl_trading_env")
 BENCHMARK = os.getenv("BENCHMARK", "synthetic_single_asset_trading")
 MAX_STEPS = int(os.getenv("MAX_STEPS", "64"))
