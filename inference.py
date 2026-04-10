@@ -1,11 +1,11 @@
 """
 Inference runner for the RL trading OpenEnv environment.
 
-Environment variables are intentionally kept unchanged:
+Runtime environment variables:
 - IMAGE_NAME: optional local Docker image for the environment
-- API_BASE_URL: LLM endpoint base URL
+- API_BASE_URL: injected LiteLLM proxy base URL
+- API_KEY: injected LiteLLM proxy API key
 - MODEL_NAME: LLM model name
-- HF_TOKEN / API_KEY: LLM API credential
 - TASK_NAME / BENCHMARK: metadata used in stdout logs
 """
 
@@ -22,8 +22,8 @@ from tasks import TASK_CONFIGS, choose_action, score_from_rewards
 load_dotenv()
 
 IMAGE_NAME = os.getenv("IMAGE_NAME")
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL")
+API_KEY = os.getenv("API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME")
 TASK_NAME = os.getenv("TASK_NAME", "rl_trading_env")
 BENCHMARK = os.getenv("BENCHMARK", "synthetic_single_asset_trading")
@@ -125,6 +125,8 @@ async def main() -> None:
     print("API_BASE_URL:", API_BASE_URL, flush=True)
     print("API_KEY:", "SET" if API_KEY else "NOT SET", flush=True)
     print("MODEL_NAME:", MODEL_NAME, flush=True)
+    if os.getenv("HF_TOKEN"):
+        print("HF_TOKEN detected but ignored; using injected API_KEY only.", flush=True)
     print("Client created:", client is not None, flush=True)
 
     scores: list[float] = []

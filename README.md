@@ -54,3 +54,14 @@ openenv validate
 ## Runtime
 
 The Docker container serves the OpenEnv app on port `8000`.
+
+For hackathon submissions, the inference runner must use the injected LiteLLM proxy variables:
+
+```python
+client = OpenAI(
+    base_url=os.environ["API_BASE_URL"],
+    api_key=os.environ["API_KEY"],
+)
+```
+
+Do not rely on `HF_TOKEN`, hardcoded credentials, or another provider for submitted builds.
