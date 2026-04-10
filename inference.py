@@ -23,7 +23,7 @@ load_dotenv()
 
 IMAGE_NAME = os.getenv("IMAGE_NAME")
 API_BASE_URL = os.getenv("API_BASE_URL","https://router.huggingface.co/v1")
-API_KEY = os.getenv("HF_TOKEN")
+API_KEY = os.getenv("API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME","meta-llama/Llama-3.1-8B-Instruct:novita")
 TASK_NAME = os.getenv("TASK_NAME", "rl_trading_env")
 BENCHMARK = os.getenv("BENCHMARK", "synthetic_single_asset_trading")
@@ -120,20 +120,32 @@ async def run_task(client: Optional[OpenAI], task_config: dict[str, object]) -> 
 
 
 async def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY) if API_BASE_URL and API_KEY and MODEL_NAME else None
+    client = OpenAI(
+        base_url=API_BASE_URL,
+        api_key=API_KEY
+    )
     print("LLM STATUS:", flush=True)
     print("API_BASE_URL:", API_BASE_URL, flush=True)
     print("API_KEY:", "SET" if API_KEY else "NOT SET", flush=True)
     print("MODEL_NAME:", MODEL_NAME, flush=True)
-    if os.getenv("HF_TOKEN"):
-        print("HF_TOKEN detected but ignored; using injected API_KEY only.", flush=True)
-    print("Client created:", client is not None, flush=True)
 
+    print("Client created:", client is not None, flush=True)
+    
+    try:
+        client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": "hello"}],
+            max_tokens=5
+        )
+    except Exception as e:
+        print(f"LLM test call failed: {e}", flush=True)
+
+        
     scores: list[float] = []
     for task_config in TASK_CONFIGS:
         score = await run_task(client, task_config)
         scores.append(score)
-
+  
     total_score = min(max(sum(scores) / max(len(scores), 1), 0.0), 0.999)
     print(f"[SUMMARY] benchmark={BENCHMARK} average_score={total_score:.8f}", flush=True)
 
