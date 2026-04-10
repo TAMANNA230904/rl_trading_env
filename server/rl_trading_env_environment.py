@@ -8,6 +8,7 @@ from uuid import uuid4
 import numpy as np
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
+from tasks import TASK_REGISTRY
 
 from rl_trading_env.models import (
     RewardMode,
@@ -89,12 +90,15 @@ class RlTradingEnvironment(Environment):
         self._shares_held = 0
         self._portfolio_history: list[float] = []
         self._returns_history: list[float] = []
+        self._task_id = "task_easy"
+        self._task = TASK_REGISTRY[self._task_id]
 
-    def reset(self) -> RlTradingObservation:
+    def reset(self, task_id: str | None = None, seed: int | None = None) -> RlTradingObservation:
         """Reset the episode and return the initial observation."""
         self._reset_count += 1
-        #self._rng = np.random.default_rng(self._base_seed + self._reset_count)
-        self._rng = np.random.default_rng()
+        self._task_id, self._task = self._resolve_task(task_id)
+        active_seed = self._task["seed"] if seed is None else seed
+        self._rng = np.random.default_rng(active_seed)
         self._prices = self._generate_price_series()
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._t = self.window_size - 1
@@ -144,16 +148,21 @@ class RlTradingEnvironment(Environment):
         return self._state
 
     def _generate_price_series(self) -> np.ndarray:
-        """Create a noisy but smooth price path for one episode."""
+        """Create a task-shaped price path for one episode."""
         total_steps = self.episode_length + self.window_size
-        drift = 0.0005
-        volatility = 0.015
+        drift = float(self._task["drift"])
+        volatility = float(self._task["volatility"])
+        seasonal_amplitude = float(self._task["seasonal_amplitude"])
+        shock_scale = float(self._task["shock_scale"])
+        market_mode = str(self._task["market_mode"])
         shocks = self._rng.normal(loc=drift, scale=volatility, size=total_steps)
         prices = np.empty(total_steps, dtype=np.float64)
         prices[0] = 100.0
         for idx in range(1, total_steps):
-            seasonal = 0.002 * np.sin(idx / 14.0)
-            prices[idx] = max(1.0, prices[idx - 1] * (1.0 + shocks[idx] + seasonal))
+            seasonal = seasonal_amplitude * np.sin(idx / 14.0)
+            regime = self._regime_adjustment(idx, market_mode)
+            impulse = self._shock_adjustment(idx, market_mode, shock_scale)
+            prices[idx] = max(1.0, prices[idx - 1] * (1.0 + shocks[idx] + seasonal + regime + impulse))
         return prices
 
     def _execute_trade(self, action: TradingActionType, price: float) -> TradeExecution:
@@ -226,6 +235,44 @@ class RlTradingEnvironment(Environment):
 
         return float(reward * self.reward_scale)
 
+    def _resolve_task(self, task_id: str | None) -> tuple[str, dict]:
+        resolved_task_id = task_id or self._task_id
+        if resolved_task_id not in TASK_REGISTRY:
+            resolved_task_id = "task_easy"
+        task = TASK_REGISTRY[resolved_task_id]
+        self.reward_scale = max(1.0, float(task["reward_scale"]))
+        return resolved_task_id, task
+
+    def _regime_adjustment(self, idx: int, market_mode: str) -> float:
+        if market_mode == "trend_up":
+            return 0.0006 if idx > self.window_size else 0.0
+        if market_mode == "momentum_breakout":
+            cycle = idx % 24
+            if 8 <= cycle <= 12:
+                return 0.0020
+            if cycle >= 18:
+                return -0.0009
+            return 0.0
+        if market_mode == "whipsaw_reversal":
+            cycle = idx % 20
+            if cycle < 4:
+                return 0.0022
+            if 4 <= cycle < 8:
+                return -0.0026
+        return 0.0
+
+    def _shock_adjustment(self, idx: int, market_mode: str, shock_scale: float) -> float:
+        if market_mode == "trend_up":
+            return 0.0
+        if market_mode == "momentum_breakout" and idx % 17 == 0:
+            return shock_scale
+        if market_mode == "whipsaw_reversal":
+            if idx % 9 == 0:
+                return shock_scale
+            if idx % 11 == 0:
+                return -shock_scale
+        return 0.0
+
     def _risk_adjusted_reward(self, step_return: float, downside_only: bool) -> float:
         """Approximate Sharpe/Sortino reward shaping from realized returns."""
         returns = np.asarray(self._returns_history, dtype=np.float64)
@@ -254,6 +301,11 @@ class RlTradingEnvironment(Environment):
         price_window = self._window_prices()
         valid_actions = self._valid_actions(current_price)
         metadata = {
+            "task_id": self._task_id,
+            "difficulty": self._task["difficulty"],
+            "scenario_name": self._task["name"],
+            "scenario_description": self._task["description"],
+            "market_mode": self._task["market_mode"],
             "executed_action": trade.action.value,
             "trade_executed": trade.executed,
             "filled_quantity": trade.quantity,
@@ -331,7 +383,7 @@ class RlTradingEnvironment(Environment):
 
 if __name__ == "__main__":
     env = RlTradingEnvironment()
-    obs = env.reset()
+    obs = env.reset(task_id="task_easy")
     print("Reset observation:", obs.model_dump())
     for action in [
         TradingActionType.BUY,

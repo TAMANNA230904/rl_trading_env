@@ -9,3 +9,6 @@ server.err.log
 server.log
 .venv/
 .codex/
+_compare_repo/
+.dockerignore
+
